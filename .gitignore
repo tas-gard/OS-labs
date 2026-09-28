@@ -1,0 +1,7 @@
+*.o
+
+lab_*/parent
+lab_*/child
+
+.vscode/
+.idea/
