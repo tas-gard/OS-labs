@@ -1,7 +1,7 @@
 *.o
+*.out
 
 lab_*/parent
 lab_*/child
 
 .vscode/
-.idea/

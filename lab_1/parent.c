@@ -19,9 +19,8 @@ int main(void) {
             return EXIT_FAILURE;
         }
 
-        if (n == 0 || c == '\n'){
+        if (n == 0 || c == '\n')
             break;
-        }
 
         filename[pos++] = c;
     }
@@ -49,49 +48,57 @@ int main(void) {
         close(pipe_fd[0]);
         close(pipe_fd[1]);
 
-        return EXIT_SUCCESS;
+        return EXIT_FAILURE;
     }
 
-if (pid == 0) {
-    close(pipe_fd[1]);
+    if (pid == 0) {
+        close(pipe_fd[1]);
 
-    if (dup2(pipe_fd[0], STDIN_FILENO) == -1) {
-        write(STDERR_FILENO, "dup2 error\n", 11);
+        if (dup2(pipe_fd[0], STDIN_FILENO) == -1) {
+            write(STDERR_FILENO, "dup2 error\n", 11);
+            close(pipe_fd[0]);
+            exit(EXIT_FAILURE);
+        }
+
+        close(pipe_fd[0]);
+
+        execl("./child.out", "child.out", filename, (char *)NULL);
+        write(STDERR_FILENO, "exec error\n", 11);
         exit(EXIT_FAILURE);
-    }
+    } else {
+        close(pipe_fd[0]);
 
-    close(pipe_fd[0]);
+        char buffer[BUFFER_SIZE];
+        ssize_t bytes_read;
 
-    execl("./child.out", "child.out", filename, (char *)NULL);
-    write(STDERR_FILENO, "exec error\n", 11);
-    exit(EXIT_FAILURE);
-} else {
-    close(pipe_fd[0]);
+        while ((bytes_read = read(STDIN_FILENO, buffer, BUFFER_SIZE)) > 0){
+            ssize_t total_written = 0;
 
-    char buffer[BUFFER_SIZE];
-    ssize_t bytes_read;
+            while (total_written < bytes_read){
+                ssize_t bytes_written = write(pipe_fd[1], buffer + total_written, bytes_read - total_written);
 
-    while ((bytes_read = read(STDIN_FILENO, buffer, BUFFER_SIZE)) > 0){
-        ssize_t bytes_written = write(pipe_fd[1], buffer, bytes_read);
+                if (bytes_written == -1){
+                    write(STDERR_FILENO, "write error\n", 12);
+                    close(pipe_fd[1]);
+                    wait(NULL);
+                    return EXIT_FAILURE;
+                }
 
-        if (bytes_written == -1){
-            write(STDERR_FILENO, "write error\n", 12);
+                total_written += bytes_written;
+            }
+        }
+        if (bytes_read == -1){
+            write(STDERR_FILENO, "read error\n", 11);
             close(pipe_fd[1]);
             wait(NULL);
             return EXIT_FAILURE;
         }
-    }
-    if (bytes_read == -1){
-        write(STDERR_FILENO, "read error\n", 11);
         close(pipe_fd[1]);
-        wait(NULL);
-        return EXIT_FAILURE;
-    }
 
-    close(pipe_fd[1]);
-    if (wait(NULL) == -1){
-        write(STDERR_FILENO, "wait error\n", 11);
-        return EXIT_FAILURE;
+        if (wait(NULL) == -1){
+            write(STDERR_FILENO, "wait error\n", 11);
+            return EXIT_FAILURE;
+        }
     }
-}
+    return EXIT_SUCCESS;
 }
