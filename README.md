@@ -5,3 +5,4 @@ Repository for coursework in the operating systems course
 - Lab 1 — Processes and pipes
 - Lab 2 — Parallel quicksort
 - Lab 3 — Synchronized shared memory
+- Lab 4 — dynamic libraries
